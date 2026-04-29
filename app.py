@@ -1099,32 +1099,42 @@ with tab3:
             )
 
 # ── Analyze Button ────────────────────────────────────────────────────────────
-st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
+st.divider()
 
 analyze_clicked = st.button(
     "🔬 ANALYZE INGREDIENTS",
-    use_container_width=True
+    use_container_width=True,
+    type="primary"
 )
 
-if analyze_clicked and ingredients_text.strip():
+if analyze_clicked:
 
-    parsed = parse_ingredients_text(ingredients_text)
-
-    results = analyze_ingredients(
-        parsed,
-        skin_type,
-        skin_concerns,
-        allergies,
-        strictness
-    )
-
-    if not results["found"]:
-        st.error("Could not identify any known ingredients. Please check the input.")
+    if not ingredients_text.strip():
+        st.warning("Please enter or upload ingredients to analyze.")
 
     else:
+        with st.spinner("Analyzing ingredients..."):
 
-        # ── Overview Score ────────────────────────────────────────────────
-        st.markdown('<div class="gold-divider"></div>', unsafe_allow_html=True)
+            parsed = parse_ingredients_text(ingredients_text)
+
+            results = analyze_ingredients(
+                parsed,
+                skin_type,
+                skin_concerns,
+                allergies,
+                strictness
+            )
+
+        if not results.get("found"):
+            st.error(
+                "Could not identify any known ingredients. "
+                "Please check the input."
+            )
+
+        else:
+
+               # ── Overview Score ────────────────────────────────────────────────
+        st.divider()
 
         score = results["toxicity_score"]
 
@@ -1144,47 +1154,26 @@ if analyze_clicked and ingredients_text.strip():
             "❌ Danger – Contains Harmful Substances"
         )
 
-        st.markdown(f"""
-        <div class="score-section">
+        st.markdown("## 🧪 Analysis Result")
 
-            <div style="min-width:110px;">
-                <div class="score-label">Toxicity Score</div>
-                <div class="score-value" style="color:{score_color};">
-                    {score}<span style="font-size:1.2rem;color:#7a756e;">/10</span>
-                </div>
-            </div>
+        col1, col2, col3 = st.columns([1, 2, 1])
 
-            <div style="flex:1;">
-                <div style="
-                    font-family:'Cormorant Garamond',serif;
-                    font-size:1.25rem;
-                    color:#f0ece4;
-                    margin-bottom:.35rem;
-                ">
-                    {verdict}
-                </div>
+        with col1:
+            st.metric(
+                label="Toxicity Score",
+                value=f"{score}/10"
+            )
 
-                <div class="score-verdict">
-                    {results['verdict_detail']}
-                </div>
-            </div>
+        with col2:
+            st.markdown(f"### {verdict}")
+            st.caption(results["verdict_detail"])
 
-            <div style="text-align:right;min-width:70px;">
-                <div class="score-label">Grade</div>
-                <div style="
-                    font-family:'Cormorant Garamond',serif;
-                    font-size:2.6rem;
-                    color:{score_color};
-                    line-height:1;
-                ">
-                    {results['grade']}
-                </div>
-            </div>
-
-        </div>
-        """, unsafe_allow_html=True)
-
-        # ── Metrics ───────────────────────────────────────────────────────
+        with col3:
+            st.metric(
+                label="Safety Grade",
+                value=results["grade"]
+            )
+                # ── Metrics ───────────────────────────────────────────────────────
         total = len(results["found"])
 
         safe_n = sum(
@@ -1199,77 +1188,48 @@ if analyze_clicked and ingredients_text.strip():
 
         unknown_n = len(results["unknown"])
 
-        st.markdown(f"""
-        <div class="metric-grid">
+        st.markdown("### 📊 Quick Summary")
 
-            <div class="metric-card">
-                <div class="metric-value" style="color:#c9a96e;">{total}</div>
-                <div class="metric-label">Total</div>
-            </div>
+        col1, col2 = st.columns(2)
+        col3, col4 = st.columns(2)
 
-            <div class="metric-card">
-                <div class="metric-value" style="color:#5da882;">{safe_n}</div>
-                <div class="metric-label">Safe</div>
-            </div>
+        with col1:
+            st.metric("Total", total)
 
-            <div class="metric-card">
-                <div class="metric-value" style="color:#d4733a;">{concern_n}</div>
-                <div class="metric-label">Concern</div>
-            </div>
+        with col2:
+            st.metric("Safe", safe_n)
 
-            <div class="metric-card">
-                <div class="metric-value" style="color:#7a756e;">{unknown_n}</div>
-                <div class="metric-label">Unknown</div>
-            </div>
+        with col3:
+            st.metric("Concern", concern_n)
 
-        </div>
-        """, unsafe_allow_html=True)
+        with col4:
+            st.metric("Unknown", unknown_n)
 
-        # ── Skin Compatibility ────────────────────────────────────────────
+               # ── Skin Compatibility ────────────────────────────────────────────
         compat = results.get("skin_compatibility", {})
 
         if compat:
 
-            st.markdown('<div class="ds-card">', unsafe_allow_html=True)
-            st.markdown(
-                f'<div class="ds-card-title">💆 Compatibility for {skin_type} Skin</div>',
-                unsafe_allow_html=True
-            )
+            st.markdown(f"### 💆 Compatibility for {skin_type} Skin")
 
             for attr, val in compat.items():
 
-                bar_color = (
-                    "#5da882" if val >= 70 else
-                    "#d4a843" if val >= 40 else
-                    "#c94f4f"
-                )
+                if val >= 70:
+                    bar_color = "🟢"
+                elif val >= 40:
+                    bar_color = "🟡"
+                else:
+                    bar_color = "🔴"
 
-                st.markdown(f"""
-                <div style="margin-bottom:.9rem;">
+                col1, col2 = st.columns([3, 1])
 
-                    <div style="
-                        display:flex;
-                        justify-content:space-between;
-                        gap:.5rem;
-                        margin-bottom:.25rem;
-                    ">
-                        <span style="font-size:.82rem;color:#b8b0a4;">{attr}</span>
-                        <span style="font-size:.82rem;color:{bar_color};font-weight:700;">
-                            {val}%
-                        </span>
-                    </div>
+                with col1:
+                    st.write(f"{bar_color} {attr}")
 
-                    <div class="progress-bar-outer">
-                        <div class="progress-bar-inner"
-                             style="width:{val}%;
-                             background:{bar_color};">
-                        </div>
-                    </div>
+                with col2:
+                    st.write(f"**{val}%**")
 
-                </div>
-                """, unsafe_allow_html=True)
-
-            st.markdown('</div>', unsafe_allow_html=True)
+                st.progress(val / 100)
 
         # ── Charts (Stacked for Mobile) ───────────────────────────────────
         risk_counts = {
@@ -1481,16 +1441,19 @@ with st.expander("📋 Full Ingredient Analysis Table", expanded=False):
         hide_index=True
     )
 
-    csv = df_display.to_csv(index=False).encode("utf-8")
+    # ── CSV Export (WebView Safe) ────────────────────────────────
+    csv_text = df_display.to_csv(index=False)
 
-    st.download_button(
-        "⬇️ Download Full Report (CSV)",
-        csv,
-        "dermascan_report.csv",
-        "text/csv",
-        use_container_width=True
+    st.text_area(
+        "📄 Copy / Save CSV Report",
+        value=csv_text,
+        height=220
     )
 
+    st.info(
+        "In Android APK/WebView, downloads may fail. "
+        "Use this CSV text to copy, share, or save manually."
+    )
 # ── Recommendations ───────────────────────────────────────────────
 recs = get_skin_type_recommendation(
     skin_type,
@@ -1499,13 +1462,12 @@ recs = get_skin_type_recommendation(
 )
 
 if recs:
-
     st.subheader("💡 Personalized Recommendations")
 
     for r in recs:
         st.success(r)
 
-        # ── Radar Chart ──────────────────────────────────────────────────
+# ── Radar Chart ──────────────────────────────────────────────────
 radar_cats = [
     "Hydration",
     "Brightening",
@@ -1537,20 +1499,10 @@ fig_radar.update_layout(
         bgcolor="rgba(0,0,0,0)",
         radialaxis=dict(
             visible=True,
-            range=[0, 100],
-            color="#7a756e",
-            gridcolor="rgba(255,255,255,.06)"
-        ),
-        angularaxis=dict(
-            color="#b8b0a4",
-            gridcolor="rgba(255,255,255,.06)"
+            range=[0, 100]
         )
     ),
-    paper_bgcolor="rgba(0,0,0,0)",
-    plot_bgcolor="rgba(0,0,0,0)",
     title="Formula Benefit Profile",
-    font=dict(color="#b8b0a4"),
-    margin=dict(t=45, b=10, l=20, r=20),
     height=340
 )
 
@@ -1564,7 +1516,6 @@ st.plotly_chart(
         "responsive": True
     }
 )
-
 # ── Unknown Ingredients ─────────────────────────────────────────
 if results["unknown"]:
 
@@ -1582,9 +1533,6 @@ if results["unknown"]:
         unknown_text = " • ".join(results["unknown"])
 
         st.write(unknown_text)
-
-elif analyze_clicked:
-    st.warning("Please enter or upload ingredients to analyze.")
 
 # ── Footer ───────────────────────────────────────────────────────────
 st.markdown("""
