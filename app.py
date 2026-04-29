@@ -1495,22 +1495,30 @@ if analyze_clicked:
                 }
             )
 # ── Unknown Ingredients ─────────────────────────────────────────
-            if results["unknown"]:
+            
+            # ── Unknown Ingredients ─────────────────────────────────────────
 
-             with st.expander(
-                f"❓ {len(results['unknown'])} Unrecognized Ingredients",
-                expanded=False
-            ):
+            unknown_list = results.get("unknown", [])
 
-                st.info(
-                    "These ingredients were not found in our database. "
-                    "They may be trademarked names, INCI variants, "
-                    "spelling variants, or newer compounds."
-                )
+            if isinstance(unknown_list, list) and len(unknown_list) > 0:
 
-                unknown_text = " • ".join(results["unknown"])
+                with st.expander(
+                    f"❓ {len(unknown_list)} Unrecognized Ingredients",
+                    expanded=False
+                ):
 
-                st.write(unknown_text)
+                    st.info(
+                        "These ingredients were not found in our database. "
+                        "They may be trademarked names, INCI variants, "
+                        "spelling variants, or newer compounds."
+                    )
+
+                    unknown_text = " • ".join(unknown_list)
+
+                    st.write(unknown_text)
+
+            elif analyze_clicked:
+                st.warning("Please enter or upload ingredients to analyze.")
 
 # ── Footer ───────────────────────────────────────────────────────────
             st.markdown("""
