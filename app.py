@@ -1152,387 +1152,387 @@ if analyze_clicked:
             st.write(results["verdict_detail"])
             st.write(f"Grade: {results['grade']}")
                 # ── Metrics ───────────────────────────────────────────────────────
-        total = len(results["found"])
+            total = len(results["found"])
 
-        safe_n = sum(
-            1 for i in results["found"]
-            if i["risk"] in ["Safe", "Low"]
-        )
-
-        concern_n = sum(
-            1 for i in results["found"]
-            if i["risk"] in ["Moderate", "High", "Danger"]
-        )
-
-        unknown_n = len(results["unknown"])
-
-        st.markdown("### 📊 Quick Summary")
-
-        col1, col2 = st.columns(2)
-        col3, col4 = st.columns(2)
-
-        with col1:
-            st.metric("Total", total)
-
-        with col2:
-            st.metric("Safe", safe_n)
-
-        with col3:
-            st.metric("Concern", concern_n)
-
-        with col4:
-            st.metric("Unknown", unknown_n)
-
-               # ── Skin Compatibility ────────────────────────────────────────────
-        compat = results.get("skin_compatibility", {})
-
-        if compat:
-
-            st.markdown(f"### 💆 Compatibility for {skin_type} Skin")
-
-            for attr, val in compat.items():
-
-                if val >= 70:
-                    bar_color = "🟢"
-                elif val >= 40:
-                    bar_color = "🟡"
-                else:
-                    bar_color = "🔴"
-
-                col1, col2 = st.columns([3, 1])
-
-                with col1:
-                    st.write(f"{bar_color} {attr}")
-
-                with col2:
-                    st.write(f"**{val}%**")
-
-                st.progress(val / 100)
-
-        # ── Charts (Stacked for Mobile) ───────────────────────────────────
-        risk_counts = {
-            "Safe": 0,
-            "Low": 0,
-            "Moderate": 0,
-            "High": 0,
-            "Danger": 0
-        }
-
-        for ing in results["found"]:
-            risk_counts[ing["risk"]] += 1
-
-        fig_donut = go.Figure(go.Pie(
-            labels=list(risk_counts.keys()),
-            values=list(risk_counts.values()),
-            hole=0.62,
-            marker_colors=[
-                "#5da882",
-                "#8eb85a",
-                "#d4a843",
-                "#d4733a",
-                "#c94f4f"
-            ],
-            textinfo="none",
-            hovertemplate="<b>%{label}</b><br>%{value} ingredients<extra></extra>"
-        ))
-
-        fig_donut.update_layout(
-            title="Risk Distribution",
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#b8b0a4"),
-            margin=dict(t=45, b=15, l=15, r=15),
-            height=300,
-            annotations=[dict(
-                text=f"<b>{total}</b><br>Total",
-                x=0.5,
-                y=0.5,
-                showarrow=False,
-                font=dict(size=16, color="#f0ece4")
-            )]
-        )
-
-        st.plotly_chart(
-            fig_donut,
-            use_container_width=True,
-            config={"displayModeBar": False}
-        )
-
-        # ── Category Chart ────────────────────────────────────────────────
-        cat_counts = {}
-
-        for ing in results["found"]:
-            cat = ing.get("category", "Other")
-            cat_counts[cat] = cat_counts.get(cat, 0) + 1
-
-        sorted_cats = sorted(
-            cat_counts.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )[:10]
-
-        fig_bar = go.Figure(go.Bar(
-            x=[x[1] for x in sorted_cats],
-            y=[x[0] for x in sorted_cats],
-            orientation="h",
-            marker_color="#c9a96e",
-            text=[x[1] for x in sorted_cats],
-            textposition="outside"
-        ))
-
-        fig_bar.update_layout(
-            title="By Function Category",
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            xaxis=dict(showgrid=False, visible=False),
-            yaxis=dict(color="#b8b0a4"),
-            font=dict(color="#b8b0a4"),
-            margin=dict(t=45, b=15, l=15, r=35),
-            height=320
-        )
-
-        st.plotly_chart(
-            fig_bar,
-            use_container_width=True,
-            config={"displayModeBar": False}
-        )
-
-# ── EWG Score Distribution ────────────────────────────────────────
-ewg_scores = [
-    i.get("ewg_score", 0)
-    for i in results["found"]
-    if i.get("ewg_score") is not None
-]
-
-if ewg_scores:
-
-    fig_hist = go.Figure(go.Histogram(
-        x=ewg_scores,
-        nbinsx=10,
-        marker=dict(
-            color=ewg_scores,
-            colorscale=[
-                [0, "#5da882"],
-                [0.35, "#8eb85a"],
-                [0.55, "#d4a843"],
-                [0.75, "#d4733a"],
-                [1, "#c94f4f"]
-            ],
-            line=dict(color="rgba(0,0,0,.25)", width=1)
-        ),
-        hovertemplate="EWG Score %{x}<br>Count %{y}<extra></extra>"
-    ))
-
-    fig_hist.update_layout(
-        title="EWG Hazard Distribution",
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#b8b0a4"),
-        xaxis=dict(
-            title="EWG Score",
-            gridcolor="rgba(255,255,255,.04)"
-        ),
-        yaxis=dict(
-            title="Ingredients",
-            gridcolor="rgba(255,255,255,.04)"
-        ),
-        margin=dict(t=45, b=20, l=20, r=10),
-        height=280
-    )
-
-    st.plotly_chart(
-        fig_hist,
-        use_container_width=True,
-        config={
-            "displayModeBar": False,
-            "scrollZoom": False,
-            "doubleClick": False,
-            "responsive": True
-        }
-    )
-
-# ── Allergen Alerts ───────────────────────────────────────────────
-if results.get("allergen_alerts"):
-
-    alerts = " · ".join(results["allergen_alerts"])
-
-    st.warning(f"⚠️ Allergen Alerts: {alerts}")
-
-       # ── Flagged Ingredients ───────────────────────────────────────────
-flagged = [
-    i for i in results["found"]
-    if i["risk"] in ["High", "Danger"]
-]
-
-if flagged:
-
-    st.subheader("🚨 High-Concern Ingredients")
-
-    for ing in flagged:
-
-        risk_text = ing["risk"]
-        risk_icon = "🔴" if risk_text == "Danger" else "🟠"
-
-        with st.container(border=True):
-
-            st.markdown(
-                f"**{risk_icon} {ing['name'].title()}**  \n"
-                f"Risk Level: **{risk_text}**"
+            safe_n = sum(
+                1 for i in results["found"]
+                if i["risk"] in ["Safe", "Low"]
             )
 
-            if ing.get("function"):
-                st.caption(f"Function: {ing['function']}")
+            concern_n = sum(
+                1 for i in results["found"]
+                if i["risk"] in ["Moderate", "High", "Danger"]
+            )
 
-            if ing.get("description"):
-                st.write(ing["description"])
+            unknown_n = len(results["unknown"])
 
-            if ing.get("concern"):
-                st.error(f"Concern: {ing['concern']}")
+            st.markdown("### 📊 Quick Summary")
+
+            col1, col2 = st.columns(2)
+            col3, col4 = st.columns(2)
+
+            with col1:
+                st.metric("Total", total)
+
+            with col2:
+                st.metric("Safe", safe_n)
+
+            with col3:
+                st.metric("Concern", concern_n)
+
+            with col4:
+                st.metric("Unknown", unknown_n)
+
+               # ── Skin Compatibility ────────────────────────────────────────────
+            compat = results.get("skin_compatibility", {})
+
+            if compat:
+
+                st.markdown(f"### 💆 Compatibility for {skin_type} Skin")
+
+                for attr, val in compat.items():
+
+                    if val >= 70:
+                       bar_color = "🟢"
+                    elif val >= 40:
+                         bar_color = "🟡"
+                    else:
+                         bar_color = "🔴"
+
+                    col1, col2 = st.columns([3, 1])
+
+                    with col1:
+                        st.write(f"{bar_color} {attr}")
+
+                    with col2:
+                        st.write(f"**{val}%**")
+
+                    st.progress(val / 100)
+
+        # ── Charts (Stacked for Mobile) ───────────────────────────────────
+            risk_counts = {
+                "Safe": 0,
+                "Low": 0,
+                "Moderate": 0,
+                "High": 0,
+                "Danger": 0
+            }
+
+            for ing in results["found"]:
+                risk_counts[ing["risk"]] += 1
+
+            fig_donut = go.Figure(go.Pie(
+                labels=list(risk_counts.keys()),
+                values=list(risk_counts.values()),
+                hole=0.62,
+                marker_colors=[
+                    "#5da882",
+                    "#8eb85a",
+                    "#d4a843",
+                    "#d4733a",
+                    "#c94f4f"
+                ],
+                textinfo="none",
+                hovertemplate="<b>%{label}</b><br>%{value} ingredients<extra></extra>"
+            ))
+
+            fig_donut.update_layout(
+                title="Risk Distribution",
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#b8b0a4"),
+                margin=dict(t=45, b=15, l=15, r=15),
+                height=300,
+                annotations=[dict(
+                    text=f"<b>{total}</b><br>Total",
+                    x=0.5,
+                    y=0.5,
+                    showarrow=False,
+                    font=dict(size=16, color="#f0ece4")
+                )]
+            )
+
+            st.plotly_chart(
+                fig_donut,
+                use_container_width=True,
+                config={"displayModeBar": False}
+            )
+
+        # ── Category Chart ────────────────────────────────────────────────
+            cat_counts = {}
+
+            for ing in results["found"]:
+                cat = ing.get("category", "Other")
+                cat_counts[cat] = cat_counts.get(cat, 0) + 1
+
+            sorted_cats = sorted(
+                cat_counts.items(),
+                key=lambda x: x[1],
+                reverse=True
+            )[:10]
+
+            fig_bar = go.Figure(go.Bar(
+                x=[x[1] for x in sorted_cats],
+                y=[x[0] for x in sorted_cats],
+                orientation="h",
+                marker_color="#c9a96e",
+                text=[x[1] for x in sorted_cats],
+                textposition="outside"
+            ))
+
+            fig_bar.update_layout(
+                title="By Function Category",
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                xaxis=dict(showgrid=False, visible=False),
+                yaxis=dict(color="#b8b0a4"),
+                font=dict(color="#b8b0a4"),
+                margin=dict(t=45, b=15, l=15, r=35),
+                height=320
+            )
+
+            st.plotly_chart(
+                fig_bar,
+                use_container_width=True,
+                config={"displayModeBar": False}
+            )
+
+# ── EWG Score Distribution ────────────────────────────────────────
+            ewg_scores = [
+                i.get("ewg_score", 0)
+                for i in results["found"]
+                if i.get("ewg_score") is not None
+            ]
+
+            if ewg_scores:
+
+                fig_hist = go.Figure(go.Histogram(
+                    x=ewg_scores,
+                    nbinsx=10,
+                    marker=dict(
+                        color=ewg_scores,
+                        colorscale=[
+                            [0, "#5da882"],
+                            [0.35, "#8eb85a"],
+                            [0.55, "#d4a843"],
+                            [0.75, "#d4733a"],
+                            [1, "#c94f4f"]
+                        ],
+                    line=dict(color="rgba(0,0,0,.25)", width=1)
+                ),
+                hovertemplate="EWG Score %{x}<br>Count %{y}<extra></extra>"
+            ))
+
+            fig_hist.update_layout(
+                title="EWG Hazard Distribution",
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#b8b0a4"),
+                xaxis=dict(
+                    title="EWG Score",
+                    gridcolor="rgba(255,255,255,.04)"
+                ),
+                yaxis=dict(
+                    title="Ingredients",
+                    gridcolor="rgba(255,255,255,.04)"
+                ),
+                margin=dict(t=45, b=20, l=20, r=10),
+                height=280
+            )     
+
+            st.plotly_chart(
+                fig_hist,
+                use_container_width=True,
+                config={
+                    "displayModeBar": False,
+                    "scrollZoom": False,
+                    "doubleClick": False,
+                    "responsive": True
+                }
+            )
+
+# ── Allergen Alerts ───────────────────────────────────────────────
+            if results.get("allergen_alerts"):
+
+                alerts = " · ".join(results["allergen_alerts"])
+
+                st.warning(f"⚠️ Allergen Alerts: {alerts}")
+
+       # ── Flagged Ingredients ───────────────────────────────────────────
+            flagged = [
+                i for i in results["found"]
+                if i["risk"] in ["High", "Danger"]
+            ]
+
+            if flagged:
+
+                st.subheader("🚨 High-Concern Ingredients")
+
+                for ing in flagged:
+
+                    risk_text = ing["risk"]
+                    risk_icon = "🔴" if risk_text == "Danger" else "🟠"
+
+                    with st.container(border=True):
+
+                        st.markdown(
+                            f"**{risk_icon} {ing['name'].title()}**  \n"
+                            f"Risk Level: **{risk_text}**"
+                        )
+
+                        if ing.get("function"):
+                           st.caption(f"Function: {ing['function']}")
+
+                        if ing.get("description"):
+                           st.write(ing["description"])
+
+                        if ing.get("concern"):
+                           st.error(f"Concern: {ing['concern']}")
 
 # ── Full Ingredient Table ────────────────────────────────────────
-with st.expander("📋 Full Ingredient Analysis Table", expanded=False):
+        with st.expander("📋 Full Ingredient Analysis Table", expanded=False):
 
-    df = pd.DataFrame(results["found"])
+            df = pd.DataFrame(results["found"])
 
-    display_cols = [
-        c for c in [
-            "name",
-            "risk",
-            "category",
-            "function",
-            "ewg_score",
-            "description"
-        ]
-        if c in df.columns
-    ]
+            display_cols = [
+                c for c in [
+                    "name",
+                    "risk",
+                    "category",
+                    "function",
+                    "ewg_score",
+                    "description"
+                ]
+                if c in df.columns
+            ]
 
-    df_display = df[display_cols].copy()
+            df_display = df[display_cols].copy()
 
-    df_display.columns = [
-        c.replace("_", " ").title()
-        for c in display_cols
-    ]
+            df_display.columns = [
+                c.replace("_", " ").title()
+                for c in display_cols
+            ]
 
-    st.dataframe(
-        df_display,
-        use_container_width=True,
-        hide_index=True
-    )
+            st.dataframe(
+                df_display,
+                use_container_width=True,
+                hide_index=True
+            )
 
     # ── CSV Export (WebView Safe) ────────────────────────────────
-    csv_text = df_display.to_csv(index=False)
+            csv_text = df_display.to_csv(index=False)
 
-    st.text_area(
-        "📄 Copy / Save CSV Report",
-        value=csv_text,
-        height=220
-    )
+            st.text_area(
+                "📄 Copy / Save CSV Report",
+                value=csv_text,
+                height=220
+            )
 
-    st.info(
-        "In Android APK/WebView, downloads may fail. "
-        "Use this CSV text to copy, share, or save manually."
-    )
+            st.info(
+                "In Android APK/WebView, downloads may fail. "
+                "Use this CSV text to copy, share, or save manually."
+            )
 # ── Recommendations ───────────────────────────────────────────────
-recs = get_skin_type_recommendation(
-    skin_type,
-    results,
-    skin_concerns
-)
+            recs = get_skin_type_recommendation(
+                skin_type,
+                results,
+                skin_concerns
+            ) 
 
-if recs:
-    st.subheader("💡 Personalized Recommendations")
+            if recs:
+                st.subheader("💡 Personalized Recommendations")
 
-    for r in recs:
-        st.success(r)
+                for r in recs:
+                    st.success(r)
 
 # ── Radar Chart ──────────────────────────────────────────────────
-radar_cats = [
-    "Hydration",
-    "Brightening",
-    "Anti-aging",
-    "Sun Protection",
-    "Soothing",
-    "Exfoliation"
-]
+            radar_cats = [
+                "Hydration",
+                "Brightening",
+                "Anti-aging",
+                "Sun Protection",
+                "Soothing",
+                "Exfoliation"
+            ] 
 
-radar_vals = [
-    results.get("radar", {}).get(c, np.random.randint(20, 80))
-    for c in radar_cats
-]
+            radar_vals = [
+                results.get("radar", {}).get(c, np.random.randint(20, 80))
+                for c in radar_cats
+            ]
 
-radar_vals += [radar_vals[0]]
-radar_cats_full = radar_cats + [radar_cats[0]]
+            radar_vals += [radar_vals[0]]
+            radar_cats_full = radar_cats + [radar_cats[0]]
 
-fig_radar = go.Figure(go.Scatterpolar(
-    r=radar_vals,
-    theta=radar_cats_full,
-    fill="toself",
-    fillcolor="rgba(201,169,110,.10)",
-    line=dict(color="#c9a96e", width=2),
-    marker=dict(size=5, color="#c9a96e")
-))
+            fig_radar = go.Figure(go.Scatterpolar(
+                r=radar_vals,
+                theta=radar_cats_full,
+                fill="toself",
+                fillcolor="rgba(201,169,110,.10)",
+                line=dict(color="#c9a96e", width=2),
+                marker=dict(size=5, color="#c9a96e")
+            ))
 
-fig_radar.update_layout(
-    polar=dict(
-        bgcolor="rgba(0,0,0,0)",
-        radialaxis=dict(
-            visible=True,
-            range=[0, 100]
-        )
-    ),
-    title="Formula Benefit Profile",
-    height=340
-)
+            fig_radar.update_layout(
+                polar=dict(
+                    bgcolor="rgba(0,0,0,0)",
+                    radialaxis=dict(
+                        visible=True,
+                        range=[0, 100]
+                    )
+                ),
+                title="Formula Benefit Profile",
+                height=340
+            )
 
-st.plotly_chart(
-    fig_radar,
-    use_container_width=True,
-    config={
-        "displayModeBar": False,
-        "scrollZoom": False,
-        "doubleClick": False,
-        "responsive": True
-    }
-)
+            st.plotly_chart(
+                fig_radar,
+                use_container_width=True,
+                config={
+                    "displayModeBar": False,
+                    "scrollZoom": False,
+                    "doubleClick": False,
+                    "responsive": True
+                }
+            )
 # ── Unknown Ingredients ─────────────────────────────────────────
-if results["unknown"]:
+            if results["unknown"]:
 
-    with st.expander(
-        f"❓ {len(results['unknown'])} Unrecognized Ingredients",
-        expanded=False
-    ):
+             with st.expander(
+                f"❓ {len(results['unknown'])} Unrecognized Ingredients",
+                expanded=False
+            ):
 
-        st.info(
-            "These ingredients were not found in our database. "
-            "They may be trademarked names, INCI variants, "
-            "spelling variants, or newer compounds."
-        )
+                st.info(
+                    "These ingredients were not found in our database. "
+                    "They may be trademarked names, INCI variants, "
+                    "spelling variants, or newer compounds."
+                )
 
-        unknown_text = " • ".join(results["unknown"])
+                unknown_text = " • ".join(results["unknown"])
 
-        st.write(unknown_text)
+                st.write(unknown_text)
 
 # ── Footer ───────────────────────────────────────────────────────────
-st.markdown("""
-<div class="gold-divider"></div>
+            st.markdown("""
+            <div class="gold-divider"></div>
 
-<div style='text-align:center;
-padding:24px 10px;
-color:#7a756e;
-font-size:13px;
-line-height:1.7;'>
+            <div style='text-align:center;
+            padding:24px 10px;
+            color:#7a756e;
+            font-size:13px;
+            line-height:1.7;'>
 
-<div style='font-family:Cormorant Garamond,serif;
-font-size:24px;
-color:#c9a96e;
-margin-bottom:8px;'>
-DERMASCAN
-</div>
+            <div style='font-family:Cormorant Garamond,serif;
+            font-size:24px;
+            color:#c9a96e;
+            margin-bottom:8px;'>
+            DERMASCAN
+            </div>
 
-For educational & informational purposes only.<br>
-Always consult a dermatologist for medical advice.<br><br>
+            For educational & informational purposes only.<br>
+            Always consult a dermatologist for medical advice.<br><br>
 
-Decode every formula. Choose skincare with confidence.
+            Decode every formula. Choose skincare with confidence.
 
-</div>
-""", unsafe_allow_html=True)
+            </div>
+            """, unsafe_allow_html=True)
