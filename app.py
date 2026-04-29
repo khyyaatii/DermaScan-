@@ -1136,21 +1136,21 @@ if analyze_clicked:
                # ── Overview Score ────────────────────────────────────────────────
        # ── Overview Score TEST ─────────────────────────
 
-score = results["toxicity_score"]
+            score = results["toxicity_score"]
 
-verdict = (
-    "Excellent – Clean & Safe Formula" if score <= 2 else
-    "Good – Mostly Safe with Minor Concerns" if score <= 4 else
-    "Moderate – Some Ingredients Need Attention" if score <= 6 else
-    "High Concern – Contains Problematic Ingredients" if score <= 8 else
-    "Danger – Contains Harmful Substances"
-)
+            verdict = (
+                "Excellent – Clean & Safe Formula" if score <= 2 else
+                "Good – Mostly Safe with Minor Concerns" if score <= 4 else
+                "Moderate – Some Ingredients Need Attention" if score <= 6 else
+                "High Concern – Contains Problematic Ingredients" if score <= 8 else
+                "Danger – Contains Harmful Substances"
+            )
 
-st.subheader("Toxicity Score")
-st.metric("Score", f"{score}/10")
-st.success(verdict)
-st.write(results["verdict_detail"])
-st.write(f"Grade: {results['grade']}")
+            st.subheader("Toxicity Score")
+            st.metric("Score", f"{score}/10")
+            st.success(verdict)
+            st.write(results["verdict_detail"])
+            st.write(f"Grade: {results['grade']}")
                 # ── Metrics ───────────────────────────────────────────────────────
         total = len(results["found"])
 
