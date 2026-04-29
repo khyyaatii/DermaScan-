@@ -1359,276 +1359,229 @@ if analyze_clicked and ingredients_text.strip():
             config={"displayModeBar": False}
         )
 
-                # ── EWG Score Distribution ────────────────────────────────────────
-        ewg_scores = [
-            i.get("ewg_score", 0)
-            for i in results["found"]
-            if i.get("ewg_score") is not None
+# ── EWG Score Distribution ────────────────────────────────────────
+ewg_scores = [
+    i.get("ewg_score", 0)
+    for i in results["found"]
+    if i.get("ewg_score") is not None
+]
+
+if ewg_scores:
+
+    fig_hist = go.Figure(go.Histogram(
+        x=ewg_scores,
+        nbinsx=10,
+        marker=dict(
+            color=ewg_scores,
+            colorscale=[
+                [0, "#5da882"],
+                [0.35, "#8eb85a"],
+                [0.55, "#d4a843"],
+                [0.75, "#d4733a"],
+                [1, "#c94f4f"]
+            ],
+            line=dict(color="rgba(0,0,0,.25)", width=1)
+        ),
+        hovertemplate="EWG Score %{x}<br>Count %{y}<extra></extra>"
+    ))
+
+    fig_hist.update_layout(
+        title="EWG Hazard Distribution",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#b8b0a4"),
+        xaxis=dict(
+            title="EWG Score",
+            gridcolor="rgba(255,255,255,.04)"
+        ),
+        yaxis=dict(
+            title="Ingredients",
+            gridcolor="rgba(255,255,255,.04)"
+        ),
+        margin=dict(t=45, b=20, l=20, r=10),
+        height=280
+    )
+
+    st.plotly_chart(
+        fig_hist,
+        use_container_width=True,
+        config={
+            "displayModeBar": False,
+            "scrollZoom": False,
+            "doubleClick": False,
+            "responsive": True
+        }
+    )
+
+# ── Allergen Alerts ───────────────────────────────────────────────
+if results.get("allergen_alerts"):
+
+    alerts = " · ".join(results["allergen_alerts"])
+
+    st.warning(f"⚠️ Allergen Alerts: {alerts}")
+
+       # ── Flagged Ingredients ───────────────────────────────────────────
+flagged = [
+    i for i in results["found"]
+    if i["risk"] in ["High", "Danger"]
+]
+
+if flagged:
+
+    st.subheader("🚨 High-Concern Ingredients")
+
+    for ing in flagged:
+
+        risk_text = ing["risk"]
+        risk_icon = "🔴" if risk_text == "Danger" else "🟠"
+
+        with st.container(border=True):
+
+            st.markdown(
+                f"**{risk_icon} {ing['name'].title()}**  \n"
+                f"Risk Level: **{risk_text}**"
+            )
+
+            if ing.get("function"):
+                st.caption(f"Function: {ing['function']}")
+
+            if ing.get("description"):
+                st.write(ing["description"])
+
+            if ing.get("concern"):
+                st.error(f"Concern: {ing['concern']}")
+
+# ── Full Ingredient Table ────────────────────────────────────────
+with st.expander("📋 Full Ingredient Analysis Table", expanded=False):
+
+    df = pd.DataFrame(results["found"])
+
+    display_cols = [
+        c for c in [
+            "name",
+            "risk",
+            "category",
+            "function",
+            "ewg_score",
+            "description"
         ]
+        if c in df.columns
+    ]
 
-        if ewg_scores:
+    df_display = df[display_cols].copy()
 
-            fig_hist = go.Figure(go.Histogram(
-                x=ewg_scores,
-                nbinsx=10,
-                marker=dict(
-                    color=ewg_scores,
-                    colorscale=[
-                        [0, "#5da882"],
-                        [0.35, "#8eb85a"],
-                        [0.55, "#d4a843"],
-                        [0.75, "#d4733a"],
-                        [1, "#c94f4f"]
-                    ],
-                    line=dict(color="rgba(0,0,0,.25)", width=1)
-                ),
-                hovertemplate="EWG Score %{x}<br>Count %{y}<extra></extra>"
-            ))
+    df_display.columns = [
+        c.replace("_", " ").title()
+        for c in display_cols
+    ]
 
-            fig_hist.update_layout(
-                title="EWG Hazard Distribution",
-                paper_bgcolor="rgba(0,0,0,0)",
-                plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#b8b0a4"),
-                xaxis=dict(
-                    title="EWG Score",
-                    gridcolor="rgba(255,255,255,.04)"
-                ),
-                yaxis=dict(
-                    title="Ingredients",
-                    gridcolor="rgba(255,255,255,.04)"
-                ),
-                margin=dict(t=45, b=20, l=20, r=10),
-                height=280
-            )
+    st.dataframe(
+        df_display,
+        use_container_width=True,
+        hide_index=True
+    )
 
-            st.plotly_chart(
-                fig_hist,
-                use_container_width=True,
-                config={"displayModeBar": False}
-            )
+    csv = df_display.to_csv(index=False).encode("utf-8")
 
-        # ── Allergen Alerts ───────────────────────────────────────────────
-        if results.get("allergen_alerts"):
+    st.download_button(
+        "⬇️ Download Full Report (CSV)",
+        csv,
+        "dermascan_report.csv",
+        "text/csv",
+        use_container_width=True
+    )
 
-            st.markdown(
-                '<div class="warn-box">⚠️ <strong>Allergen Alerts:</strong> '
-                + " · ".join(results["allergen_alerts"])
-                + '</div>',
-                unsafe_allow_html=True
-            )
+# ── Recommendations ───────────────────────────────────────────────
+recs = get_skin_type_recommendation(
+    skin_type,
+    results,
+    skin_concerns
+)
 
-        # ── Flagged Ingredients ───────────────────────────────────────────
-        flagged = [
-            i for i in results["found"]
-            if i["risk"] in ["High", "Danger"]
-        ]
+if recs:
 
-        if flagged:
+    st.subheader("💡 Personalized Recommendations")
 
-            st.markdown('<div class="ds-card">', unsafe_allow_html=True)
-            st.markdown(
-                '<div class="ds-card-title">🚨 High-Concern Ingredients</div>',
-                unsafe_allow_html=True
-            )
-
-            for ing in flagged:
-
-                badge_class = (
-                    "badge-high"
-                    if ing["risk"] == "High"
-                    else "badge-danger"
-                )
-
-                st.markdown(f"""
-                <div style="
-                    background:rgba(201,79,79,.05);
-                    border:1px solid rgba(201,79,79,.18);
-                    border-radius:12px;
-                    padding:.9rem;
-                    margin-bottom:.7rem;
-                ">
-
-                    <div style="
-                        display:flex;
-                        justify-content:space-between;
-                        gap:.5rem;
-                        align-items:flex-start;
-                        margin-bottom:.35rem;
-                    ">
-
-                        <span style="
-                            font-family:'DM Mono',monospace;
-                            color:#f0ece4;
-                            font-size:.84rem;
-                            word-break:break-word;
-                        ">
-                            {ing['name'].title()}
-                        </span>
-
-                        <span class="badge {badge_class}">
-                            {ing['risk']}
-                        </span>
-
-                    </div>
-
-                    <div style="color:#b8b0a4;font-size:.76rem;">
-                        {ing.get('function','')}
-                    </div>
-
-                    <div style="color:#7a756e;font-size:.74rem;margin-top:.25rem;">
-                        {ing.get('description','')}
-                    </div>
-
-                    <div style="color:#c94f4f;font-size:.72rem;margin-top:.3rem;">
-                        ⚠️ {ing.get('concern','')}
-                    </div>
-
-                </div>
-                """, unsafe_allow_html=True)
-
-            st.markdown('</div>', unsafe_allow_html=True)
-
-        # ── Full Ingredient Table ────────────────────────────────────────
-        with st.expander("📋 Full Ingredient Analysis Table", expanded=False):
-
-            df = pd.DataFrame(results["found"])
-
-            display_cols = [
-                c for c in
-                ["name", "risk", "category", "function", "ewg_score", "description"]
-                if c in df.columns
-            ]
-
-            df_display = df[display_cols].copy()
-
-            df_display.columns = [
-                c.replace("_", " ").title()
-                for c in display_cols
-            ]
-
-            st.dataframe(
-                df_display,
-                use_container_width=True,
-                hide_index=True
-            )
-
-            csv = df_display.to_csv(index=False).encode("utf-8")
-
-            st.download_button(
-                "⬇️ Download Full Report (CSV)",
-                csv,
-                "dermascan_report.csv",
-                "text/csv",
-                use_container_width=True
-            )
-
-        # ── Recommendations ───────────────────────────────────────────────
-        recs = get_skin_type_recommendation(
-            skin_type,
-            results,
-            skin_concerns
-        )
-
-        if recs:
-
-            st.markdown('<div class="ds-card">', unsafe_allow_html=True)
-            st.markdown(
-                '<div class="ds-card-title">💡 Personalized Recommendations</div>',
-                unsafe_allow_html=True
-            )
-
-            for r in recs:
-                st.markdown(
-                    f'<div class="tip-box">✦ {r}</div>',
-                    unsafe_allow_html=True
-                )
-
-            st.markdown('</div>', unsafe_allow_html=True)
+    for r in recs:
+        st.success(r)
 
         # ── Radar Chart ──────────────────────────────────────────────────
-        radar_cats = [
-            "Hydration",
-            "Brightening",
-            "Anti-aging",
-            "Sun Protection",
-            "Soothing",
-            "Exfoliation"
-        ]
+radar_cats = [
+    "Hydration",
+    "Brightening",
+    "Anti-aging",
+    "Sun Protection",
+    "Soothing",
+    "Exfoliation"
+]
 
-        radar_vals = [
-            results.get("radar", {}).get(c, np.random.randint(20, 80))
-            for c in radar_cats
-        ]
+radar_vals = [
+    results.get("radar", {}).get(c, np.random.randint(20, 80))
+    for c in radar_cats
+]
 
-        radar_vals += [radar_vals[0]]
-        radar_cats_full = radar_cats + [radar_cats[0]]
+radar_vals += [radar_vals[0]]
+radar_cats_full = radar_cats + [radar_cats[0]]
 
-        fig_radar = go.Figure(go.Scatterpolar(
-            r=radar_vals,
-            theta=radar_cats_full,
-            fill="toself",
-            fillcolor="rgba(201,169,110,.10)",
-            line=dict(color="#c9a96e", width=2),
-            marker=dict(size=5, color="#c9a96e")
-        ))
+fig_radar = go.Figure(go.Scatterpolar(
+    r=radar_vals,
+    theta=radar_cats_full,
+    fill="toself",
+    fillcolor="rgba(201,169,110,.10)",
+    line=dict(color="#c9a96e", width=2),
+    marker=dict(size=5, color="#c9a96e")
+))
 
-        fig_radar.update_layout(
-            polar=dict(
-                bgcolor="rgba(0,0,0,0)",
-                radialaxis=dict(
-                    visible=True,
-                    range=[0, 100],
-                    color="#7a756e",
-                    gridcolor="rgba(255,255,255,.06)"
-                ),
-                angularaxis=dict(
-                    color="#b8b0a4",
-                    gridcolor="rgba(255,255,255,.06)"
-                )
-            ),
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            title="Formula Benefit Profile",
-            font=dict(color="#b8b0a4"),
-            margin=dict(t=45, b=10, l=20, r=20),
-            height=340
+fig_radar.update_layout(
+    polar=dict(
+        bgcolor="rgba(0,0,0,0)",
+        radialaxis=dict(
+            visible=True,
+            range=[0, 100],
+            color="#7a756e",
+            gridcolor="rgba(255,255,255,.06)"
+        ),
+        angularaxis=dict(
+            color="#b8b0a4",
+            gridcolor="rgba(255,255,255,.06)"
+        )
+    ),
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    title="Formula Benefit Profile",
+    font=dict(color="#b8b0a4"),
+    margin=dict(t=45, b=10, l=20, r=20),
+    height=340
+)
+
+st.plotly_chart(
+    fig_radar,
+    use_container_width=True,
+    config={
+        "displayModeBar": False,
+        "scrollZoom": False,
+        "doubleClick": False,
+        "responsive": True
+    }
+)
+
+# ── Unknown Ingredients ─────────────────────────────────────────
+if results["unknown"]:
+
+    with st.expander(
+        f"❓ {len(results['unknown'])} Unrecognized Ingredients",
+        expanded=False
+    ):
+
+        st.info(
+            "These ingredients were not found in our database. "
+            "They may be trademarked names, INCI variants, "
+            "spelling variants, or newer compounds."
         )
 
-        st.plotly_chart(
-            fig_radar,
-            use_container_width=True,
-            config={"displayModeBar": False}
-        )
+        unknown_text = " • ".join(results["unknown"])
 
-               # ── Unknown Ingredients ─────────────────────────────────────────
-        if results["unknown"]:
-
-            with st.expander(
-                f"❓ {len(results['unknown'])} Unrecognized Ingredients",
-                expanded=False
-            ):
-
-                st.markdown(
-                    """
-                    <div class="tip-box">
-                    These ingredients were not found in our database.
-                    They may be trademarked names, INCI variants,
-                    spelling variants, or newer compounds.
-                    </div>
-                    """,
-                    unsafe_allow_html=True
-                )
-
-                chips_html = "".join(
-                    f'<span class="chip">{u}</span>'
-                    for u in results["unknown"]
-                )
-
-                st.markdown(
-                    f'<div class="chip-container">{chips_html}</div>',
-                    unsafe_allow_html=True
-                )
+        st.write(unknown_text)
 
 elif analyze_clicked:
     st.warning("Please enter or upload ingredients to analyze.")
