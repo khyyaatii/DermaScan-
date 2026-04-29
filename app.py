@@ -1637,31 +1637,23 @@ elif analyze_clicked:
 st.markdown("""
 <div class="gold-divider"></div>
 
-<div style="
-    text-align:center;
-    padding:1.5rem .4rem 2rem;
-    color:#7a756e;
-    font-size:.74rem;
-    line-height:1.7;
-    letter-spacing:.03em;
-">
+<div style='text-align:center;
+padding:24px 10px;
+color:#7a756e;
+font-size:13px;
+line-height:1.7;'>
 
-    <div style="
-        font-family:'Cormorant Garamond',serif;
-        font-size:1.1rem;
-        color:#c9a96e;
-        margin-bottom:.35rem;
-        letter-spacing:.12em;
-    ">
-        DERMASCAN
-    </div>
+<div style='font-family:Cormorant Garamond,serif;
+font-size:24px;
+color:#c9a96e;
+margin-bottom:8px;'>
+DERMASCAN
+</div>
 
-    For educational & informational purposes only.<br>
-    Always consult a dermatologist for medical advice.<br>
+For educational & informational purposes only.<br>
+Always consult a dermatologist for medical advice.<br><br>
 
-    <div style="margin-top:.45rem;">
-        Decode every formula. Choose skincare with confidence.
-    </div>
+Decode every formula. Choose skincare with confidence.
 
 </div>
 """, unsafe_allow_html=True)
