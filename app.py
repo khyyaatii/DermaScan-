@@ -1134,45 +1134,23 @@ if analyze_clicked:
         else:
 
                # ── Overview Score ────────────────────────────────────────────────
-        st.divider()
+       # ── Overview Score TEST ─────────────────────────
 
-        score = results["toxicity_score"]
+score = results["toxicity_score"]
 
-        score_color = (
-            "#5da882" if score <= 2 else
-            "#8eb85a" if score <= 4 else
-            "#d4a843" if score <= 6 else
-            "#d4733a" if score <= 8 else
-            "#c94f4f"
-        )
+verdict = (
+    "Excellent – Clean & Safe Formula" if score <= 2 else
+    "Good – Mostly Safe with Minor Concerns" if score <= 4 else
+    "Moderate – Some Ingredients Need Attention" if score <= 6 else
+    "High Concern – Contains Problematic Ingredients" if score <= 8 else
+    "Danger – Contains Harmful Substances"
+)
 
-        verdict = (
-            "✨ Excellent – Clean & Safe Formula" if score <= 2 else
-            "👍 Good – Mostly Safe with Minor Concerns" if score <= 4 else
-            "⚠️ Moderate – Some Ingredients Need Attention" if score <= 6 else
-            "🚨 High Concern – Contains Problematic Ingredients" if score <= 8 else
-            "❌ Danger – Contains Harmful Substances"
-        )
-
-        st.markdown("## 🧪 Analysis Result")
-
-        col1, col2, col3 = st.columns([1, 2, 1])
-
-        with col1:
-            st.metric(
-                label="Toxicity Score",
-                value=f"{score}/10"
-            )
-
-        with col2:
-            st.markdown(f"### {verdict}")
-            st.caption(results["verdict_detail"])
-
-        with col3:
-            st.metric(
-                label="Safety Grade",
-                value=results["grade"]
-            )
+st.subheader("Toxicity Score")
+st.metric("Score", f"{score}/10")
+st.success(verdict)
+st.write(results["verdict_detail"])
+st.write(f"Grade: {results['grade']}")
                 # ── Metrics ───────────────────────────────────────────────────────
         total = len(results["found"])
 
