@@ -1498,24 +1498,21 @@ if analyze_clicked:
             
             # ── Unknown Ingredients ─────────────────────────────────────────
 
+            # ── Unknown Ingredients SAFE VERSION ─────────────────────────
+
             unknown_list = results.get("unknown", [])
 
             if isinstance(unknown_list, list) and len(unknown_list) > 0:
 
-                with st.expander(
-                    f"❓ {len(unknown_list)} Unrecognized Ingredients",
-                    expanded=False
-                ):
+                st.subheader("Unrecognized Ingredients")
 
-                    st.info(
-                        "These ingredients were not found in our database. "
-                        "They may be trademarked names, INCI variants, "
-                        "spelling variants, or newer compounds."
-                    )
+                st.info(
+                    "These ingredients were not found in our database. "
+                    "They may be trademarked names, INCI variants, "
+                    "spelling variants, or newer compounds."
+                )
 
-                    unknown_text = " • ".join(unknown_list)
-
-                    st.write(unknown_text)
+                st.write(" • ".join(map(str, unknown_list)))
 
             elif analyze_clicked:
                 st.warning("Please enter or upload ingredients to analyze.")
